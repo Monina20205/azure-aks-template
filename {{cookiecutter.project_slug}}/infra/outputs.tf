@@ -2,6 +2,11 @@ output "acr_login_server" {
   value = azurerm_container_registry.acr.login_server
 }
 
+output "acr_name" {
+  value       = azurerm_container_registry.acr.name
+  description = "Nombre final generado del ACR (usar este para deployments)"
+}
+
 output "acr_admin_username" {
   value     = azurerm_container_registry.acr.admin_username
   sensitive = true
