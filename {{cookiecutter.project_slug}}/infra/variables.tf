@@ -5,7 +5,7 @@ variable "resource_group_name" {
 
 variable "location" {
   description = "Región de Azure"
-  default     = "eastus2"
+  default     = "westus"
 }
 
 # --- AQUÍ ESTÁ EL CAMBIO CLAVE ---
@@ -23,5 +23,5 @@ variable "cluster_name" {
 
 variable "kubernetes_version" {
   description = "Version de Kubernetes"
-  default     = "1.29.7"
+  default     = "1.34.0"
 }
