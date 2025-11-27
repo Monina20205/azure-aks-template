@@ -1,0 +1,13 @@
+# --- Dependencias de Desarrollo y Automatización ---
+
+# Formateo de código automático (para que todo el equipo escriba igual)
+black==23.7.0
+
+# Linter para detectar errores de sintaxis y estilo
+flake8==6.1.0
+
+# Testing (para probar tus scripts y tu app)
+pytest==7.4.0
+
+# Nota: ops.py actualmente usa librerías nativas (subprocess, os, sys),
+# por lo que no requiere instalar nada extra para correr.
