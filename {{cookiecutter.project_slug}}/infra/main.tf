@@ -1,29 +1,39 @@
+# Crear el Grupo de Recursos
 resource "azurerm_resource_group" "rg" {
   name     = var.resource_group_name
   location = var.location
 }
 
-# --- Azure Container Registry (ACR) ---
-resource "azurerm_container_registry" "acr" {
-  name                = var.acr_name
-  resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
-  sku                 = "Standard" # Standard permite escaneos de seguridad básicos
-  admin_enabled       = true       # Habilitado para facilitar logins iniciales
+# --- GENERADOR DE NOMBRES ÚNICOS PARA ACR ---
+resource "random_string" "acr_suffix" {
+  length  = 6
+  special = false
+  upper   = false # Azure exige minúsculas para ACR
 }
 
-# --- Azure Kubernetes Service (AKS) ---
+# Crear el Container Registry (Nombre dinámico)
+resource "azurerm_container_registry" "acr" {
+  # Concatenamos el prefijo (variable) + el sufijo aleatorio
+  name                = "${var.acr_prefix}${random_string.acr_suffix.result}"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  sku                 = "Standard"
+  admin_enabled       = true
+}
+# -------------------------------------------
+
+# Crear el Cluster de Kubernetes (AKS)
 resource "azurerm_kubernetes_cluster" "aks" {
   name                = var.cluster_name
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
-  dns_prefix          = "{{ cookiecutter.project_slug }}"
+  dns_prefix          = "aks-dns"
   kubernetes_version  = var.kubernetes_version
 
   default_node_pool {
     name                = "default"
     node_count          = 2
-    vm_size             = "Standard_DS2_v2" # Económico pero capaz
+    vm_size             = "Standard_DS2_v2"
     enable_auto_scaling = true
     min_count           = 1
     max_count           = 3
@@ -37,14 +47,9 @@ resource "azurerm_kubernetes_cluster" "aks" {
     network_plugin    = "kubenet"
     load_balancer_sku = "standard"
   }
-
-  tags = {
-    Environment = "Production"
-    CreatedBy   = "Terraform"
-  }
 }
 
-# --- Permisos: AKS necesita permiso para "jalar" (pull) imágenes de ACR ---
+# Permisos: Darle poder al AKS para leer del ACR
 resource "azurerm_role_assignment" "aks_acr_pull" {
   principal_id                     = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
   role_definition_name             = "AcrPull"
@@ -52,33 +57,17 @@ resource "azurerm_role_assignment" "aks_acr_pull" {
   skip_service_principal_aad_check = true
 }
 
-# ... (Tu código anterior de AKS) ...
-
-# --- Generación de nombre único seguro ---
-resource "random_string" "suffix" {
+# --- STORAGE ADICIONAL (Para la App) ---
+resource "random_string" "sa_suffix" {
   length  = 4
   special = false
   upper   = false
 }
 
-# --- Storage Account para la Aplicación (Logs/Archivos) ---
 resource "azurerm_storage_account" "app_storage" {
-  # Creamos un nombre único tipo: "storeinventoryx9z1"
-  name                     = "st${replace(var.cluster_name, "-", "")}${random_string.suffix.result}"
+  name                     = "st${replace(var.cluster_name, "-", "")}${random_string.sa_suffix.result}"
   resource_group_name      = azurerm_resource_group.rg.name
   location                 = azurerm_resource_group.rg.location
   account_tier             = "Standard"
-  account_replication_type = "LRS" # Local Redundancy (Más barato para dev/test)
-
-  tags = {
-    environment = "Production"
-    created_by  = "Terraform"
-  }
-}
-
-# --- File Share (Opcional: Por si los contenedores necesitan compartir archivos) ---
-resource "azurerm_storage_share" "app_share" {
-  name                 = "app-data-share"
-  storage_account_name = azurerm_storage_account.app_storage.name
-  quota                = 50 # GB
+  account_replication_type = "LRS"
 }
