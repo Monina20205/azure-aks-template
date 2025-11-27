@@ -1,0 +1,11 @@
+{
+  "project_name": "Azure AKS Microservice",
+  "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
+  "author_name": "DevOps Engineer",
+  "description": "Plantilla profesional para AKS + Terraform + Python",
+  "azure_region": "eastus2",
+  "kubernetes_version": "1.27",
+  "acr_name": "mycompanyacr",
+  "terraform_version": "1.5.0",
+  "python_version": "3.10"
+}
